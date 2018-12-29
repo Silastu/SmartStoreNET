@@ -108,6 +108,24 @@
         </tr>
         <tr>
             <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.AllowCustomersToVoteOnPosts)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.AllowCustomersToVoteOnPosts, Html.CheckBoxFor(x => x.AllowCustomersToVoteOnPosts, new { data_toggler_for = "#pnlForumsEnabled .post-voting" }))
+                @Html.ValidationMessageFor(model => model.AllowCustomersToVoteOnPosts)
+            </td>
+        </tr>
+        <tr class="post-voting">
+            <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.AllowGuestsToVoteOnPosts)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.AllowGuestsToVoteOnPosts)
+                @Html.ValidationMessageFor(model => model.AllowGuestsToVoteOnPosts)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
                 @Html.SmartLabelFor(model => model.ForumEditor)
             </td>
             <td class="adminData">
@@ -127,24 +145,6 @@
             <td class="adminData">
                 @Html.SettingEditorFor(model => model.AllowSorting)
                 @Html.ValidationMessageFor(model => model.AllowSorting)
-            </td>
-        </tr>
-        <tr>
-            <td class="adminTitle">
-                @Html.SmartLabelFor(model => model.AllowCustomersToSelectPageSize)
-            </td>
-            <td class="adminData">
-                @Html.SettingEditorFor(model => model.AllowCustomersToSelectPageSize)
-                @Html.ValidationMessageFor(model => model.AllowCustomersToSelectPageSize)
-            </td>
-        </tr>
-        <tr>
-            <td class="adminTitle">
-                @Html.SmartLabelFor(model => model.DefaultPageSizeOptions)
-            </td>
-            <td class="adminData">
-                @Html.SettingEditorFor(model => model.DefaultPageSizeOptions)
-                @Html.ValidationMessageFor(model => model.DefaultPageSizeOptions)
             </td>
         </tr>
         <tr>

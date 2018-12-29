@@ -1,10 +1,12 @@
 ﻿namespace SmartStore.Data.Migrations
 {
 	using System;
-	using System.Data.Entity;
 	using System.Data.Entity.Migrations;
-	using System.Linq;
 	using Setup;
+    using SmartStore.Core.Data;
+    using SmartStore.Core.Domain.Catalog;
+	using SmartStore.Core.Domain.Common;
+	using SmartStore.Utilities;
 
 	public sealed class MigrationsConfiguration : DbMigrationsConfiguration<SmartObjectContext>
 	{
@@ -13,6 +15,17 @@
 			AutomaticMigrationsEnabled = false;
 			AutomaticMigrationDataLossAllowed = true;
 			ContextKey = "SmartStore.Core";
+
+            if (DataSettings.Current.IsSqlServer)
+            {
+                var commandTimeout = CommonHelper.GetAppSetting<int?>("sm:EfMigrationsCommandTimeout");
+                if (commandTimeout.HasValue)
+                {
+                    CommandTimeout = commandTimeout.Value;
+                }
+
+                CommandTimeout = 9999999;
+            }
 		}
 
 		public void SeedDatabase(SmartObjectContext context)
@@ -30,7 +43,17 @@
 
 		public void MigrateSettings(SmartObjectContext context)
 		{
+			context.MigrateSettings(x => 
+			{
+				x.Add(TypeHelper.NameOf<PerformanceSettings>(y => y.CacheSegmentSize, true), 500);
+				x.Add(TypeHelper.NameOf<PerformanceSettings>(y => y.AlwaysPrefetchTranslations, true), false);
+				x.Add(TypeHelper.NameOf<PerformanceSettings>(y => y.AlwaysPrefetchUrlSlugs, true), false);
 
+				// New CatalogSettings properties
+				x.Add(TypeHelper.NameOf<CatalogSettings>(y => y.ShowSubCategoriesInSubPages, true), false);
+				x.Add(TypeHelper.NameOf<CatalogSettings>(y => y.ShowDescriptionInSubPages, true), false);
+				x.Add(TypeHelper.NameOf<CatalogSettings>(y => y.IncludeFeaturedProductsInSubPages, true), false);
+			});
 		}
 
 		public void MigrateLocaleResources(LocaleResourcesBuilder builder)
@@ -398,6 +421,10 @@
             builder.AddOrUpdate("Search.Facet.Date.Older", "and older", "und älter");
 
             builder.AddOrUpdate("Forum.PostText", "Post text", "Beitragstext");
+            builder.AddOrUpdate("Forum.Sticky", "Sticky topic", "Festes Thema");
+
+            builder.AddOrUpdate("Search.HitsFor", "{0} hits for {1}", "{0} Treffer für {1}");
+            builder.AddOrUpdate("Search.NoMoreHitsFound", "There were no more hits found.", "Es wurden keine weiteren Treffer gefunden.");
 
             builder.AddOrUpdate("Admin.Configuration.Settings.Search.WildcardSearchNote",
                 "The wildcard mode can slow down the search for a large number of objects.",
@@ -449,6 +476,7 @@
             builder.Delete(
                 "Admin.Configuration.Settings.Search.DefaultSortOrderMode",
                 "Admin.Configuration.Settings.Search.InstantSearchNumberOfProducts",
+                "Admin.Configuration.Settings.CustomerUser.DefaultAvatarEnabled",
                 "Forum.Search.LimitResultsToPrevious.AllResults",
                 "Forum.Search.LimitResultsToPrevious.1day",
                 "Forum.Search.LimitResultsToPrevious.7days",
@@ -464,7 +492,155 @@
                 "Forum.SearchTermMinimumLengthIsNCharacters",
                 "Enums.SmartStore.Core.Domain.Forums.ForumSearchType.All",
                 "Enums.SmartStore.Core.Domain.Forums.ForumSearchType.PostTextOnly",
-                "Enums.SmartStore.Core.Domain.Forums.ForumSearchType.TopicTitlesOnly");
+                "Enums.SmartStore.Core.Domain.Forums.ForumSearchType.TopicTitlesOnly",
+                "Forum.AdvancedSearch",
+                "Forum.SearchButton",
+                "Forum.PageTitle.Search");
+
+            builder.AddOrUpdate("Admin.Configuration.Settings.Catalog.PriceDisplayStyle",
+                "Price display style",
+                "Preisdarstellung",
+                "Specifies the form in which prices are displayed in product lists and on the product detail page.",
+                "Bestimmt die Darstellungform von Preisen in Produktlisten und auf der Produktdetailseite.");
+
+            builder.AddOrUpdate("Admin.Configuration.Settings.Catalog.DisplayTextForZeroPrices",
+                "Display text when prices are 0,00",
+                "Zeige Text wenn Preise 0,00 sind",
+                "Specifies whether to display a textual resource (free) instead of the value 0.00.",
+                "Bestimmt, ob statt dem Wert 0,00 eine textuelle Resource (kostenlos) angezeigt werden soll.");
+
+            builder.AddOrUpdate("Enums.SmartStore.Core.Domain.Catalog.PriceDisplayStyle.Default", "Default", "Standard");
+            builder.AddOrUpdate("Enums.SmartStore.Core.Domain.Catalog.PriceDisplayStyle.BadgeAll", "In bagdes", "Markiert");
+            builder.AddOrUpdate("Enums.SmartStore.Core.Domain.Catalog.PriceDisplayStyle.BadgeFreeProductsOnly", "Badge free products only", "Nur kostenlose Produkte markieren");
+
+            builder.AddOrUpdate("Admin.DataExchange.Export.Filter.WorkingLanguageId",
+                "Language",
+                "Sprache",
+                "Filter by language",
+                "Nach Sprache filtern");
+            
+
+            builder.AddOrUpdate("Admin.Configuration.Settings.GeneralCommon.CaptchaShowOnForumPage",
+                "Show on forum pages",
+                "Auf Forenseiten anzeigen",
+                "Specifies whether to display a CAPTCHA on forum pages when creating or replying to a topic.",
+                "Legt fest, ob ein CAPTCHA auf Forenseiten angezeigt werden soll, wenn ein Thema erstellt oder darauf geantwortet wird.");
+
+            builder.AddOrUpdate("Admin.Catalog.Products.BundleItems.NoProductLinkageForBundleItem",
+                "The product \"{0}\" cannot be assigned an attribute of the type \"product\" because it is bundle item of a product bundle.",
+                "Dem Produkt \"{0}\" kann kein Attribut vom Typ \"Produkt\" zugeordnet werden, weil es auf der Stückliste eines Produkt-Bundle steht.");
+
+            builder.AddOrUpdate("Search.RelatedSearchTerms",
+                "Related search terms",
+                "Verwandte Suchbegriffe");
+
+            builder.AddOrUpdate("Plugins.CannotLoadModule",
+                "The plugin or provider \"{0}\" cannot be loaded.",
+                "Das Plugin oder der Provider \"{0}\" kann nicht geladen werden.");
+
+            builder.AddOrUpdate("Admin.System.ScheduleTasks.RunPerMachine",
+                "Run per machine",
+                "Pro Maschine ausführen",
+                "Indicates whether the task is executed decidedly on each machine of a web farm.",
+                "Gibt an, ob die Aufgabe auf jeder Maschine einer Webfarm dezidiert ausgeführt wird.");
+
+            builder.Delete("Address.Fields.Required.Hint");
+
+            builder.AddOrUpdate("Common.FormFields.Required.Hint",
+                "* Input elements with asterisk are required and have to be filled out.",
+                "* Eingabefelder mit Sternchen sind Pflichfelder und müssen ausgefüllt werden.");
+
+            builder.AddOrUpdate("Forum.Post.Vote.OnlyRegistered",
+                "Only registered users can vote for posts.",
+                "Nur registrierte Benutzer können Beiträge bewerten.");
+
+            builder.AddOrUpdate("Forum.Post.Vote.OwnPostNotAllowed",
+                "You cannot vote for your own post.",
+                "Sie können nicht Ihren eigenen Beitrag bewerten.");
+
+            builder.AddOrUpdate("Forum.Post.Vote.SuccessfullyVoted",
+                "Thank you for your vote.",
+                "Danke für Ihre Bewertung.");
+
+            builder.AddOrUpdate("Common.Liked", "Liked", "Gefällt");
+            builder.AddOrUpdate("Common.LikeIt", "I like it", "Gefällt mir");
+            builder.AddOrUpdate("Common.DoNotLikeIt", "I do not like it anymore", "Gefällt mir nicht mehr");
+
+            builder.AddOrUpdate("Admin.Configuration.Settings.Forums.AllowCustomersToVoteOnPosts",
+                "Allow customers to vote on posts",
+                "Benutzer können Beiträge bewerten",
+                "Specifies whether customers can vote on posts.",
+                "Legt fest, ob Benutzer Beiträge bewerten können.");
+
+            builder.AddOrUpdate("Admin.Configuration.Settings.Forums.AllowGuestsToVoteOnPosts",
+                "Allow guests to vote on posts",
+                "Gäste können Beiträge bewerten",
+                "Specifies whether guests can vote on posts.",
+                "Legt fest, ob Gäste Beiträge bewerten können.");
+
+            // Typos.
+            builder.AddOrUpdate("Admin.Promotions.Discounts.Requirements")
+                .Value("de", "Voraussetzungen");
+            builder.AddOrUpdate("Admin.Promotions.Discounts.Requirements.DiscountRequirementType")
+                .Value("de", "Typ der Voraussetzung");
+            builder.AddOrUpdate("Admin.Promotions.Discounts.Requirements.DiscountRequirementType.Hint")
+                .Value("de", "Voraussetzungen für den Rabatt");
+            builder.AddOrUpdate("Admin.Promotions.Discounts.Requirements.Remove")
+                .Value("de", "Voraussetzung für den Rabatt entfernen");
+            builder.AddOrUpdate("Admin.Promotions.Discounts.Requirements.SaveBeforeEdit")
+                .Value("de", "Sie müssen den Rabatt zunächst speichern, bevor Sie Voraussetzungen für seine Anwendung festlegen können");
+
+            builder.AddOrUpdate("Common.Voting", "Voting", "Abstimmung");
+            builder.AddOrUpdate("Common.Answer", "Answer", "Antwort");
+            builder.AddOrUpdate("Common.Size", "Size", "Größe");
+
+            builder.AddOrUpdate("Admin.Configuration.Settings.CustomerUser.CustomerFormFields.Description",
+                "Manage form fields that are displayed during registration.",
+                "Verwalten Sie Formularfelder, die während der Registrierung angezeigt werden.");
+
+            builder.AddOrUpdate("Admin.Configuration.Settings.CustomerUser.AddressFormFields.Description",
+                "Manage form fields that are displayed during checkout and on \"My account\" page.",
+                "Verwalten Sie Formularfelder, die während des Checkout-Prozesses und im \"Mein Konto\" Bereich angezeigt werden.");
+
+            builder.AddOrUpdate("Enums.SmartStore.Core.Domain.DataExchange.RelatedEntityType.TierPrice", "Tier price", "Staffelpreis");
+            builder.AddOrUpdate("Enums.SmartStore.Core.Domain.DataExchange.RelatedEntityType.ProductVariantAttributeValue", "Attribute option", "Attribut-Option");
+            builder.AddOrUpdate("Enums.SmartStore.Core.Domain.DataExchange.RelatedEntityType.ProductVariantAttributeCombination", "Attribute combination", "Attribut-Kombination");
+
+            builder.AddOrUpdate("Admin.DataExchange.Export.ExportRelatedData.Validate",
+                "Related data cannot be exported if the option \"Export attribute combinations\" is activated.",
+                "Zugehörige Daten können nicht exportiert werden, wenn die Option \"Attributkombinationen exportieren\" aktiviert ist.");
+
+            builder.AddOrUpdate("Admin.Common.ProcessingInfo",
+                "{0}: {1} of {2} processed",
+                "{0}: {1} von {2} verarbeitet");
+
+			builder.AddOrUpdate("Admin.Configuration.Settings.Catalog.ShowSubCategoriesInSubPages",
+				"Show subcategories also in subpages",
+				"Unterwarengruppen auch in Unterseiten anzeigen",
+				"Subpage: List index greater than 1 or any active filter.",
+				"Unterseite: Listenindex größer 1 oder mind. ein aktiver Filter.");
+
+			builder.AddOrUpdate("Admin.Configuration.Settings.Catalog.ShowDescriptionInSubPages",
+				"Show page description also in subpages",
+				"Seitenbeschreibungen auch in Unterseiten anzeigen",
+				"Subpage: List index greater than 1 or any active filter.",
+				"Unterseite: Listenindex größer 1 oder mind. ein aktiver Filter.");
+
+			builder.AddOrUpdate("Admin.Configuration.Settings.Catalog.IncludeFeaturedProductsInSubPages",
+				"Show featured products also in subpages",
+				"Top-Produkte auch in Unterseiten anzeigen",
+				"Subpage: List index greater than 1 or any active filter.",
+				"Unterseite: Listenindex größer 1 oder mind. ein aktiver Filter.");
+
+			builder.AddOrUpdate("Admin.Common.CopyOf", "Copy of {0}", "Kopie von {0}");
+
+            builder.AddOrUpdate("Admin.Configuration.Languages.DefaultLanguage.Note",
+                "The default language of the shop is <b class=\"font-weight-medium\">{0}</b>. The default is always the first published language.",
+                "Die Standardsprache des Shops ist <b class=\"font-weight-medium\">{0}</b>. Standard ist stets die erste veröffentlichte Sprache.");
+
+            builder.AddOrUpdate("Admin.Configuration.Languages.AvailableLanguages.Note",
+                "Click <b class=\"font-weight-medium\">Download</b> to install a new language including all localized resources. On <a class=\"font-weight-medium\" href=\"https://translate.smartstore.com/\" target=\"_blank\">translate.smartstore.com</a> you will find more details about available resources.",
+                "Klicken Sie auf <b class=\"font-weight-medium\">Download</b>, um eine neue Sprache mit allen lokalisierten Ressourcen zu installieren. Auf <a class=\"font-weight-medium\" href=\"https://translate.smartstore.com/\" target=\"_blank\">translate.smartstore.com</a> finden Sie weitere Details zu verfügbaren Ressourcen.");
         }
     }
 }

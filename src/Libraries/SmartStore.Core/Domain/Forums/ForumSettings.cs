@@ -11,25 +11,24 @@ namespace SmartStore.Core.Domain.Forums
 			TopicSubjectMaxLength = 450;
 			PostMaxLength = 4000;
 			StrippedTopicMaxLength = 45;
-			TopicsPageSize = 10;
-			PostsPageSize = 10;
+			TopicsPageSize = 20;
+			PostsPageSize = 20;
+            ForumFeedCount = 20;
+            SearchResultsPageSize = 20;
+            LatestCustomerPostsPageSize = 20;
             AllowSorting = true;
-			SearchResultsPageSize = 12;
-            DefaultPageSizeOptions = "12,24,36,48,72,120";
-            AllowCustomersToSelectPageSize = true;
-            LatestCustomerPostsPageSize = 10;
-			ShowCustomersPostCount = true;
+            ShowCustomersPostCount = true;
 			ForumEditor = EditorType.BBCodeEditor;
 			SignaturesEnabled = true;
-			PrivateMessagesPageSize = 10;
-			ForumSubscriptionsPageSize = 10;
+			PrivateMessagesPageSize = 20;
+			ForumSubscriptionsPageSize = 20;
 			PMSubjectMaxLength = 450;
 			PMTextMaxLength = 4000;
 			HomePageActiveDiscussionsTopicCount = 5;
 			ActiveDiscussionsPageTopicCount = 50;
 			ActiveDiscussionsFeedCount = 25;
-			ForumFeedCount = 10;
-		}
+            AllowCustomersToVoteOnPosts = true;
+        }
 		
 		/// <summary>
         /// Gets or sets a value indicating whether forums are enabled
@@ -67,6 +66,16 @@ namespace SmartStore.Core.Domain.Forums
         public bool AllowCustomersToDeletePosts { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether customer can vote on posts
+        /// </summary>
+        public bool AllowCustomersToVoteOnPosts { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether guests are allowed to vote on posts
+        /// </summary>
+        public bool AllowGuestsToVoteOnPosts { get; set; }
+
+        /// <summary>
         /// Gets or sets maximum length of topic subject
         /// </summary>
         public int TopicSubjectMaxLength { get; set; }
@@ -92,24 +101,14 @@ namespace SmartStore.Core.Domain.Forums
         public int PostsPageSize { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether sorting is enabled.
-        /// </summary>
-        public bool AllowSorting { get; set; }
-
-        /// <summary>
         /// Gets or sets the page size for search result
         /// </summary>
         public int SearchResultsPageSize { get; set; }
 
         /// <summary>
-        /// Gets or sets the available customer selectable default page size options
+        /// Gets or sets a value indicating whether sorting is enabled.
         /// </summary>
-        public string DefaultPageSizeOptions { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether customers can select page size in product listings
-        /// </summary>
-        public bool AllowCustomersToSelectPageSize { get; set; }
+        public bool AllowSorting { get; set; }
 
         /// <summary>
         /// Gets or sets the page size for latest customer posts

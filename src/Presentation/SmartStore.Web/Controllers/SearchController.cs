@@ -7,9 +7,11 @@ using SmartStore.Core.Domain.Media;
 using SmartStore.Core.Search;
 using SmartStore.Core.Search.Facets;
 using SmartStore.Services.Common;
+using SmartStore.Services.Localization;
 using SmartStore.Services.Search;
 using SmartStore.Services.Search.Modelling;
 using SmartStore.Services.Search.Rendering;
+using SmartStore.Services.Seo;
 using SmartStore.Web.Framework.Controllers;
 using SmartStore.Web.Framework.Security;
 using SmartStore.Web.Models.Catalog;
@@ -26,6 +28,8 @@ namespace SmartStore.Web.Controllers
 		private readonly IGenericAttributeService _genericAttributeService;
 		private readonly CatalogHelper _catalogHelper;
 		private readonly ICatalogSearchQueryFactory _queryFactory;
+		private readonly ILocalizedEntityService _localizedEntityService;
+		private readonly IUrlRecordService _urlRecordService;
 		private readonly Lazy<IFacetTemplateProvider> _templateProvider;
 
 		public SearchController(
@@ -36,6 +40,8 @@ namespace SmartStore.Web.Controllers
 			SearchSettings searchSettings,
 			IGenericAttributeService genericAttributeService,
 			CatalogHelper catalogHelper,
+			ILocalizedEntityService localizedEntityService,
+			IUrlRecordService urlRecordService,
 			Lazy<IFacetTemplateProvider> templateProvider)
 		{
 			_queryFactory = queryFactory;
@@ -45,6 +51,8 @@ namespace SmartStore.Web.Controllers
 			_searchSettings = searchSettings;
 			_genericAttributeService = genericAttributeService;
 			_catalogHelper = catalogHelper;
+			_localizedEntityService = localizedEntityService;
+			_urlRecordService = urlRecordService;
 			_templateProvider = templateProvider;
 		}
 
@@ -55,8 +63,12 @@ namespace SmartStore.Web.Controllers
 
 			var model = new SearchBoxModel
 			{
-				InstantSearchEnabled = _searchSettings.InstantSearchEnabled,
-				ShowProductImagesInInstantSearch = _searchSettings.ShowProductImagesInInstantSearch,
+                Origin = "Search/Search",
+                SearchUrl = Url.RouteUrl("Search"),
+                InstantSearchUrl = Url.RouteUrl("InstantSearch"),
+                InputPlaceholder = T("Search.SearchBox.Tooltip"),
+                InstantSearchEnabled = _searchSettings.InstantSearchEnabled,
+				ShowThumbsInInstantSearch = _searchSettings.ShowProductImagesInInstantSearch,
 				SearchTermMinimumLength = _searchSettings.InstantSearchTermMinLength,
 				CurrentQuery = currentTerm
 			};
@@ -66,9 +78,11 @@ namespace SmartStore.Web.Controllers
 
 		[HttpPost, ValidateInput(false)]
 		public ActionResult InstantSearch(CatalogSearchQuery query)
-		{		
-			if (string.IsNullOrWhiteSpace(query.Term) || query.Term.Length < _searchSettings.InstantSearchTermMinLength)
-				return Content(string.Empty);
+		{
+            if (string.IsNullOrWhiteSpace(query.Term) || query.Term.Length < _searchSettings.InstantSearchTermMinLength)
+            {
+                return Content(string.Empty);
+            }
 
 			query
 				.BuildFacetMap(false)
@@ -88,18 +102,30 @@ namespace SmartStore.Web.Controllers
 			{
 				x.MapPrices = false;
 				x.MapShortDescription = true;
+				x.MapPictures = _searchSettings.ShowProductImagesInInstantSearch;
+				x.ThumbnailSize = _mediaSettings.ProductThumbPictureSizeOnProductDetailsPage;
+				x.PrefetchTranslations = true;
+				x.PrefetchUrlSlugs = true;
 			});
 
-			mappingSettings.MapPictures = _searchSettings.ShowProductImagesInInstantSearch;
-			mappingSettings.ThumbnailSize = _mediaSettings.ProductThumbPictureSizeOnProductDetailsPage;
+			using (_urlRecordService.BeginScope(false))
+			using (_localizedEntityService.BeginScope(false))
+			{
+				// InstantSearch should be REALLY very fast! No time for smart caching stuff.
+				if (result.Hits.Count > 0)
+				{
+					_localizedEntityService.PrefetchLocalizedProperties(
+						nameof(Product),
+						Services.WorkContext.WorkingLanguage.Id,
+						result.Hits.Select(x => x.Id).ToArray());
+				}
+				
+				// Add product hits.
+				model.TopProducts = _catalogHelper.MapProductSummaryModel(result.Hits, mappingSettings);
 
-			var summaryModel = _catalogHelper.MapProductSummaryModel(result.Hits, mappingSettings);
-
-			// Add product hits
-			model.TopProducts = summaryModel;
-
-            // Add spell checker suggestions (if any)
-            model.AddSpellCheckerSuggestions(result.SpellCheckerSuggestions, T, x => Url.RouteUrl("Search", new { q = x }));
+				// Add spell checker suggestions (if any).
+				model.AddSpellCheckerSuggestions(result.SpellCheckerSuggestions, T, x => Url.RouteUrl("Search", new { q = x }));
+			}
 
             return PartialView(model);
 		}
@@ -127,9 +153,9 @@ namespace SmartStore.Web.Controllers
 			{
 				result = _catalogSearchService.Search(query);
 			}
-			catch (Exception exception)
+			catch (Exception ex)
 			{
-				model.Error = exception.ToString();
+				model.Error = ex.ToString();
 				result = new CatalogSearchResult(query);
 			}
 
@@ -162,14 +188,11 @@ namespace SmartStore.Web.Controllers
 			var mappingSettings = _catalogHelper.GetBestFitProductSummaryMappingSettings(query.GetViewMode());
 			var summaryModel = _catalogHelper.MapProductSummaryModel(result.Hits, mappingSettings);
 
-			// Prepare paging/sorting/mode stuff
+			// Prepare paging/sorting/mode stuff.
 			_catalogHelper.MapListActions(summaryModel, null, _catalogSettings.DefaultPageSizeOptions);
 
-			// Add product hits
+			// Add product hits.
 			model.TopProducts = summaryModel;
-
-			// Add spell checker suggestions (if any)
-            model.AddSpellCheckerSuggestions(result.SpellCheckerSuggestions, T, x => Url.RouteUrl("Search", new { q = x }));
 
             return View(model);
 		}

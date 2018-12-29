@@ -39,6 +39,7 @@ using SmartStore.Web.Framework.Security;
 using SmartStore.Web.Framework.UI;
 using SmartStore.Web.Models.Common;
 using SmartStore.Web.Models.Customer;
+using SmartStore.Core.Events;
 
 namespace SmartStore.Web.Controllers
 {
@@ -82,18 +83,18 @@ namespace SmartStore.Web.Controllers
         private readonly IWebHelper _webHelper;
         private readonly ICustomerActivityService _customerActivityService;
 		private readonly ProductUrlHelper _productUrlHelper;
-
-        private readonly MediaSettings _mediaSettings;
+		private readonly MediaSettings _mediaSettings;
         private readonly LocalizationSettings _localizationSettings;
         private readonly CaptchaSettings _captchaSettings;
         private readonly ExternalAuthenticationSettings _externalAuthenticationSettings;
 		private readonly PluginMediator _pluginMediator;
+		private readonly IEventPublisher _eventPublisher;
 
-        #endregion
+		#endregion
 
-        #region Ctor
+		#region Ctor
 
-        public CustomerController(
+		public CustomerController(
             ICommonServices services,
             IAuthenticationService authenticationService,
             IDateTimeHelper dateTimeHelper,
@@ -122,7 +123,7 @@ namespace SmartStore.Web.Controllers
 			MediaSettings mediaSettings,
             LocalizationSettings localizationSettings,
             CaptchaSettings captchaSettings, ExternalAuthenticationSettings externalAuthenticationSettings,
-			PluginMediator pluginMediator)
+			PluginMediator pluginMediator, IEventPublisher eventPublisher)
         {
             _services = services;
             _authenticationService = authenticationService;
@@ -160,13 +161,13 @@ namespace SmartStore.Web.Controllers
             _webHelper = webHelper;
             _customerActivityService = customerActivityService;
 			_productUrlHelper = productUrlHelper;
-
 			_mediaSettings = mediaSettings;
             _localizationSettings = localizationSettings;
             _captchaSettings = captchaSettings;
             _externalAuthenticationSettings = externalAuthenticationSettings;
 			_pluginMediator = pluginMediator;
-        }
+			_eventPublisher = eventPublisher;
+		}
 
         #endregion
 
@@ -485,6 +486,8 @@ namespace SmartStore.Web.Controllers
 
                     _customerActivityService.InsertActivity("PublicStore.Login", _localizationService.GetResource("ActivityLog.PublicStore.Login"), customer);
 
+					_eventPublisher.Publish(new CustomerLogedInEvent { Customer = customer });
+
 					// Redirect home where redirect to referrer would be confusing.
 					if (returnUrl.IsEmpty() || returnUrl.Contains(@"/login?") || returnUrl.Contains(@"/passwordrecoveryconfirm"))
 					{
@@ -705,7 +708,8 @@ namespace SmartStore.Web.Controllers
                                     Email = model.Email,
                                     Active = true,
                                     CreatedOnUtc = DateTime.UtcNow,
-									StoreId = _storeContext.CurrentStore.Id
+									StoreId = _storeContext.CurrentStore.Id,
+                                    WorkingLanguageId = _services.WorkContext.WorkingLanguage.Id
                                 });
                             }
                         }
@@ -984,7 +988,7 @@ namespace SmartStore.Web.Controllers
 			{
 				Id = "info",
 				Text = T("Account.CustomerInfo"),
-				Icon = "user-o",
+				Icon = "fal fa-user",
 				Url = Url.Action("Info"),
 			});
 
@@ -993,7 +997,7 @@ namespace SmartStore.Web.Controllers
 			{
 				Id = "addresses",
 				Text = T("Account.CustomerAddresses"),
-				Icon = "address-book-o",
+				Icon = "fal fa-address-book",
 				Url = Url.Action("Addresses"),
 			});
 
@@ -1002,7 +1006,7 @@ namespace SmartStore.Web.Controllers
 			{
 				Id = "orders",
 				Text = T("Account.CustomerOrders"),
-				Icon = "file-text",
+				Icon = "fal fa-file-invoice",
 				Url = Url.Action("Orders"),
 			});
 
@@ -1013,7 +1017,7 @@ namespace SmartStore.Web.Controllers
 				{
 					Id = "returnrequests",
 					Text = T("Account.CustomerReturnRequests"),
-					Icon = "truck",
+					Icon = "fal fa-truck",
 					Url = Url.Action("ReturnRequests"),
 				});
 			}
@@ -1025,7 +1029,7 @@ namespace SmartStore.Web.Controllers
 				{
 					Id = "downloads",
 					Text = T("Account.DownloadableProducts"),
-					Icon = "download",
+					Icon = "fal fa-download",
 					Url = Url.Action("DownloadableProducts"),
 				});
 			}
@@ -1037,7 +1041,7 @@ namespace SmartStore.Web.Controllers
 				{
 					Id = "backinstock",
 					Text = T("Account.BackInStockSubscriptions"),
-					Icon = "bullhorn",
+					Icon = "fal fa-truck-loading",
 					Url = Url.Action("BackInStockSubscriptions"),
 				});
 			}
@@ -1049,7 +1053,7 @@ namespace SmartStore.Web.Controllers
 				{
 					Id = "rewardpoints",
 					Text = T("Account.RewardPoints"),
-					Icon = "certificate",
+					Icon = "fal fa-certificate",
 					Url = Url.Action("RewardPoints"),
 				});
 			}
@@ -1059,7 +1063,7 @@ namespace SmartStore.Web.Controllers
 			{
 				Id = "changepassword",
 				Text = T("Account.ChangePassword"),
-				Icon = "unlock-alt",
+				Icon = "fal fa-unlock-alt",
 				Url = Url.Action("ChangePassword"),
 			});
 
@@ -1070,7 +1074,7 @@ namespace SmartStore.Web.Controllers
 				{
 					Id = "avatar",
 					Text = T("Account.Avatar"),
-					Icon = "user-circle",
+					Icon = "fal fa-user-circle",
 					Url = Url.Action("Avatar"),
 				});
 			}
@@ -1082,7 +1086,7 @@ namespace SmartStore.Web.Controllers
 				{
 					Id = "forumsubscriptions",
 					Text = T("Account.ForumSubscriptions"),
-					Icon = "bell",
+					Icon = "fal fa-bell",
 					Url = Url.Action("ForumSubscriptions"),
 				});
 			}
@@ -1095,7 +1099,7 @@ namespace SmartStore.Web.Controllers
 				{
 					Id = "privatemessages",
 					Text = T("PrivateMessages.Inbox"),
-					Icon = "envelope-o",
+					Icon = "fal fa-envelope",
 					Url = Url.RouteUrl("PrivateMessages", new { tab = "inbox" }),
 					BadgeText = numUnreadMessages > 0 ? numUnreadMessages.ToString() : null,
 					BadgeStyle = BadgeStyle.Warning
@@ -1357,6 +1361,7 @@ namespace SmartStore.Web.Controllers
 
             var model = new CustomerAddressEditModel();
             model.Address.PrepareModel(null, false, _addressSettings, _localizationService, _stateProvinceService, () => _countryService.GetAllCountries());
+            model.Address.Email = customer?.Email;
 
             return View(model);
         }
@@ -1699,24 +1704,24 @@ namespace SmartStore.Web.Controllers
 
         #region Avatar
 
-        [RequireHttpsByConfigAttribute(SslRequirement.Yes)]
+        [RequireHttpsByConfig(SslRequirement.Yes)]
         public ActionResult Avatar()
         {
             if (!IsCurrentUserRegistered())
+            {
                 return new HttpUnauthorizedResult();
+            }
 
             if (!_customerSettings.AllowCustomersToUploadAvatars)
-				return RedirectToAction("Info");
+            {
+                return RedirectToAction("Info");
+            }
 
-            var customer = _workContext.CurrentCustomer;
-			var avatarId = customer.GetAttribute<int>(SystemCustomerAttributeNames.AvatarPictureId);
+			var model = new CustomerAvatarEditModel();
+            model.Avatar = _workContext.CurrentCustomer.ToAvatarModel(_genericAttributeService, _pictureService, _customerSettings, _mediaSettings, Url, null, true);
+            model.MaxFileSize = Prettifier.BytesToString(_customerSettings.AvatarMaximumSizeBytes);
 
-			var model = new CustomerAvatarModel();
-			model.MaxFileSize = Prettifier.BytesToString(_customerSettings.AvatarMaximumSizeBytes);
-            model.AvatarUrl = _pictureService.GetUrl(avatarId, _mediaSettings.AvatarPictureSize, FallbackPictureType.NoFallback);
-			model.PictureFallbackUrl = _pictureService.GetFallbackUrl(0, FallbackPictureType.Avatar);
-
-			return View(model);
+            return View(model);
         }
 
 		[HttpPost]
@@ -1759,12 +1764,10 @@ namespace SmartStore.Web.Controllers
 		[HttpPost]
 		public ActionResult RemoveAvatar()
 		{
-			var success = false;
+            var customer = _workContext.CurrentCustomer;
 
-			if (IsCurrentUserRegistered() && _customerSettings.AllowCustomersToUploadAvatars)
+            if (IsCurrentUserRegistered() && _customerSettings.AllowCustomersToUploadAvatars)
 			{
-				var customer = _workContext.CurrentCustomer;
-
 				var customerAvatar = _pictureService.GetPictureById(customer.GetAttribute<int>(SystemCustomerAttributeNames.AvatarPictureId));
 				if (customerAvatar != null)
 				{
@@ -1772,10 +1775,10 @@ namespace SmartStore.Web.Controllers
 				}
 
 				_genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.AvatarPictureId, 0);
-				success = true;
+                _genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.AvatarColor, (string)null);
 			}
 
-			return Json(new { success });
+            return RedirectToAction("Avatar");
 		}
 
         #endregion

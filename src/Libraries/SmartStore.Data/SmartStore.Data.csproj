@@ -147,6 +147,7 @@
     <Compile Include="Mapping\DataExchange\ExportDeploymentMap.cs" />
     <Compile Include="Mapping\Directory\QuantityUnitMap.cs" />
     <Compile Include="Mapping\DataExchange\ExportProfileMap.cs" />
+    <Compile Include="Mapping\Forums\ForumPostVoteMap.cs" />
     <Compile Include="Mapping\Media\MediaStorageMap.cs" />
     <Compile Include="Mapping\Messages\QueuedEmailAttachmentMap.cs" />
     <Compile Include="Mapping\Payments\PaymentMethodMap.cs" />
@@ -618,6 +619,38 @@
     <Compile Include="Migrations\201808051818238_Merge4.cs" />
     <Compile Include="Migrations\201808051818238_Merge4.Designer.cs">
       <DependentUpon>201808051818238_Merge4.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201809171309522_NewsletterSubscriptionLanguage.cs" />
+    <Compile Include="Migrations\201809171309522_NewsletterSubscriptionLanguage.Designer.cs">
+      <DependentUpon>201809171309522_NewsletterSubscriptionLanguage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201809261026134_ForumGroupAcl.cs" />
+    <Compile Include="Migrations\201809261026134_ForumGroupAcl.Designer.cs">
+      <DependentUpon>201809261026134_ForumGroupAcl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201810011954195_ForumPostVote.cs" />
+    <Compile Include="Migrations\201810011954195_ForumPostVote.Designer.cs">
+      <DependentUpon>201810011954195_ForumPostVote.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201810231214068_DataExchangeEnhancements.cs" />
+    <Compile Include="Migrations\201810231214068_DataExchangeEnhancements.Designer.cs">
+      <DependentUpon>201810231214068_DataExchangeEnhancements.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201811061745204_IsSystemProductIndex.cs" />
+    <Compile Include="Migrations\201811061745204_IsSystemProductIndex.Designer.cs">
+      <DependentUpon>201811061745204_IsSystemProductIndex.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201811082148279_LocalizedPropertyKeyGroupIndex.cs" />
+    <Compile Include="Migrations\201811082148279_LocalizedPropertyKeyGroupIndex.Designer.cs">
+      <DependentUpon>201811082148279_LocalizedPropertyKeyGroupIndex.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201811161142587_TaskHistoryErrorLength.cs" />
+    <Compile Include="Migrations\201811161142587_TaskHistoryErrorLength.Designer.cs">
+      <DependentUpon>201811161142587_TaskHistoryErrorLength.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201811202204501_ProductIndexSeekExport.cs" />
+    <Compile Include="Migrations\201811202204501_ProductIndexSeekExport.Designer.cs">
+      <DependentUpon>201811202204501_ProductIndexSeekExport.cs</DependentUpon>
     </Compile>
     <Compile Include="ObjectContextBase.SaveChanges.cs" />
     <Compile Include="Setup\Builder\ActivityLogTypeMigrator.cs" />
@@ -1112,6 +1145,30 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201808051818238_Merge4.resx">
       <DependentUpon>201808051818238_Merge4.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201809171309522_NewsletterSubscriptionLanguage.resx">
+      <DependentUpon>201809171309522_NewsletterSubscriptionLanguage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201809261026134_ForumGroupAcl.resx">
+      <DependentUpon>201809261026134_ForumGroupAcl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201810011954195_ForumPostVote.resx">
+      <DependentUpon>201810011954195_ForumPostVote.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201810231214068_DataExchangeEnhancements.resx">
+      <DependentUpon>201810231214068_DataExchangeEnhancements.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201811061745204_IsSystemProductIndex.resx">
+      <DependentUpon>201811061745204_IsSystemProductIndex.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201811082148279_LocalizedPropertyKeyGroupIndex.resx">
+      <DependentUpon>201811082148279_LocalizedPropertyKeyGroupIndex.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201811161142587_TaskHistoryErrorLength.resx">
+      <DependentUpon>201811161142587_TaskHistoryErrorLength.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201811202204501_ProductIndexSeekExport.resx">
+      <DependentUpon>201811202204501_ProductIndexSeekExport.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Sql\Indexes.sql" />
     <EmbeddedResource Include="Sql\StoredProcedures.sql" />
